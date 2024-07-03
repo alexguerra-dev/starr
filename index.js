@@ -6,14 +6,8 @@ const { readFile, writeFile, appendFile } = require('fs').promises
 const vorpal = require('vorpal')()
 const axios = require('axios')
 
-let prompt = 'pregnant woman in a bikini'
-let negativePrompt = ''
-let model = 'lyra'
-let aspectRatio = '5:4'
-let highResolution = false
-let images = 1
 let seed = 0
-let steps = 20
+
 let initialImageUrl = ''
 let initialImageEncoded = ''
 let initialImageMode = 'color'
@@ -21,6 +15,16 @@ let initialImageStrength = 50
 
 let creations = []
 let userData = {}
+
+let payload = {
+    prompt: 'pregnant woman in a bikini',
+    negativePrompt: '',
+    model: 'lyra',
+    aspectRatio: '5:4',
+    highResolution: false,
+    images: 1,
+    steps: 20,
+}
 
 vorpal
     .command('creations <operation>')
@@ -81,18 +85,52 @@ vorpal
     })
 
 vorpal
-    .command('view payload', "Outputs the current user's payload.")
+    .command('payload <operation> [values]')
+    .option('-p, --prompt <prompt>', 'The prompt.')
+    .option('-n, --negativePrompt <negativePrompt>', 'The negative prompt.')
+    .option('-m, --model <model>', 'The model.')
+    .option('-a, --aspectRatio', 'The aspect ratio.')
+    .option('-h, --highResolution', 'The high resolution.')
+    .option('-i, --images', 'The number of images.')
+    .option('-s, --steps', 'The number of steps.')
+    .description('Sets the payload for the creation. Reset, view, etc.')
     .action(function (args, callback) {
-        const payload = {
-            prompt: prompt,
-            negativePrompt: negativePrompt,
-            model: model,
-            aspectRatio: aspectRatio,
-            highResolution: highResolution,
-            images: images,
-            steps: steps,
+        this.log(args)
+
+        if (args.operation === 'reset') {
+            payload = {
+                prompt: 'pregnant woman in a bikini',
+                negativePrompt: '',
+                model: 'lyra',
+                aspectRatio: '5:4',
+                highResolution: false,
+                images: 1,
+                steps: 20,
+            }
+        } else if (args.operation === 'set') {
+            if (args.options.prompt) {
+                payload.prompt = args.options.prompt
+            } else if (args.options.negativePrompt) {
+                payload.negativePrompt = args.options.negativePrompt
+            } else if (args.options.model) {
+                payload.model = args.options.model
+            } else if (args.options.aspectRatio) {
+                payload.aspectRatio = args.options.aspectRatio
+            } else if (args.options.highResolution) {
+                payload.highResolution = args.options.highResolution
+            } else if (args.options.images) {
+                payload.images = args.options.images
+            } else if (args.options.steps) {
+                payload.steps = args.options.steps
+            } else {
+                this.log('No option provided.')
+            }
+        } else {
+            this.log('Hi this should show things')
+            this.log('This is the value of the prompt ' + payload.prompt)
+            this.log(payload)
         }
-        this.log(payload)
+
         callback()
     })
 
@@ -118,26 +156,6 @@ vorpal
                 self.log(result)
             },
         )
-    })
-
-vorpal
-    .command('write <filename> <content>', 'Writes content to a file.')
-    .action(async function (args, callback) {
-        try {
-            await writeFile(args.filename, args.content)
-            console.log(`Wrote ${args.content} to ${args.filename}`)
-        } catch (error) {
-            console.log('There was an error...')
-            console.log(error)
-        }
-        callback()
-    })
-
-vorpal
-    .command('prompt <prompt>', 'Sets the prompt.')
-    .action(function (args, callback) {
-        prompt = args.prompt
-        callback()
     })
 
 vorpal
