@@ -4,5 +4,8 @@
   "description": "Tool for making images",
   "main": "index.js",
   "author": "Alex Guerra <alexander.a.guerra@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "vorpal": "^1.12.0"
+  }
 }
