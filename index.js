@@ -19,9 +19,7 @@ let initialImageEncoded = ''
 let initialImageMode = 'color'
 let initialImageStrength = 50
 
-let creations = {}
-
-
+let creations = []
 
 async function downloadImage(url, filename) {
     const response = await axios.get(url, { responseType: 'arraybuffer' })
@@ -32,6 +30,85 @@ async function downloadImage(url, filename) {
         console.log('Image downloaded successfully!')
     })
 }
+
+async function downloadAllImagesFromObject(creation) {
+    creation.images.forEach(async (image) => {
+        const response = await axios.get(image.url, {
+            responseType: 'arraybuffer',
+        })
+        fs.writeFile(
+            `images/${creation.id}-${image.id}.jpg`,
+            response.data,
+            (err) => {
+                if (err) throw err
+                console.log('Image downloaded successfully!')
+            },
+        )
+    })
+}
+
+function updateCreations() {
+    const options = {
+        method: 'GET',
+        url: 'https://api.starryai.com/creations/',
+        headers: {
+            accept: 'application/json',
+            'X-API-Key': process.env.KEY,
+        },
+    }
+    return axios
+        .request(options)
+        .then((response) => {
+            creations = response.data
+        })
+        .catch((error) => {
+            console.error(error)
+        })
+}
+
+vorpal
+    .command('list creations', 'Lists the creations.')
+    .action(async function (args, callback) {
+        updateCreations()
+
+        creations.map((creation) => {
+            this.log(creation.id, creation.prompt)
+        })
+        // callback()
+    })
+
+vorpal
+    .command('update creations', 'Updates the creations list.')
+    .action(function (args, callback) {
+        updateCreations()
+        callback()
+    })
+
+vorpal
+    .command('display creations', 'Displays the creations list.')
+    .action(function (args, callback) {
+        console.log(creations)
+        callback()
+    })
+
+vorpal
+    .command('download image from id <id>', 'Downloads an image from an id.')
+    .action(function (args, callback) {
+        const id = 67751
+
+        const objectIn = testCreationObject
+
+        downloadAllImagesFromObject(objectIn)
+    })
+
+vorpal
+    .command(
+        'download image from object test',
+        'Downloads an image from an object',
+    )
+    .action(function (args, callback) {
+        downloadAllImagesFromObject(testCreationObject)
+    })
 
 vorpal
     .command('filter expired', 'Filters out expired creations.')
@@ -262,17 +339,37 @@ vorpal
             })
     })
 
-vorpal.command('foo', 'Outputs "bar".').action(function (args, callback) {
-    this.log('bar')
-    callback()
-})
-
 vorpal
     .command('whoami', 'Outputs the current user.')
     .action(function (args, callback) {
-        this.log(process.env.KEY)
-        this.log(process.env.USER)
+        this.log(`You are ${process.env.USER}`)
+        this.log(`Your key is ${process.env.KEY}`)
         callback()
+    })
+
+vorpal
+    .command('balance', "Gets the user's balance.")
+    .action(function (args, callback) {
+        const options = {
+            method: 'GET',
+            url: 'https://api.starryai.com/user/',
+            headers: {
+                accept: 'application/json',
+                'X-API-Key': process.env.KEY,
+            },
+        }
+
+        axios
+            .request(options)
+            .then((response) => {
+                console.log('Balance:', response.data.balance)
+                callback()
+            })
+            .catch((error) => {
+                console.log('There was an error...')
+                console.log(error)
+                callback()
+            })
     })
 
 vorpal
@@ -281,7 +378,7 @@ vorpal
         this.log('Writing image...')
         downloadImage(
             'https://tmp.starryai.com/api/67749/ef4152f9-5ea5-4bf3-9853-6446f90f2e7c.jpg',
-            `${}.jpg`,
+            'images/test.jpg',
         )
     })
 
