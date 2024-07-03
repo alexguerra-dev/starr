@@ -1,0 +1,8 @@
+{
+  "name": "starr",
+  "version": "0.0.0",
+  "description": "Tool for making images",
+  "main": "index.js",
+  "author": "Alex Guerra <alexander.a.guerra@gmail.com>",
+  "license": "MIT"
+}
