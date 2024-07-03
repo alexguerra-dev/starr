@@ -20,204 +20,64 @@ let initialImageMode = 'color'
 let initialImageStrength = 50
 
 let creations = []
-
-const testCreationObject = {
-    id: 67752,
-    status: 'completed',
-    prompt: 'pregnant woman in a nightgown doing the splits',
-    negativePrompt: null,
-    width: 768,
-    height: 768,
-    highResolution: false,
-    seed: 1136683571,
-    steps: 20,
-    model: 'anime_vintage',
-    initialImage: null,
-    initialImageMode: null,
-    initialImageStrength: null,
-    createdAt: '2024-07-03T17:23:30',
-    updatedAt: '2024-07-03T10:23:46',
-    images: [
-        {
-            id: 1,
-            url: 'https://tmp.starryai.com/api/67752/b2ca4271-8083-467f-869c-898e8ce92ddc.jpg',
-        },
-        {
-            id: 2,
-            url: 'https://tmp.starryai.com/api/67752/4682e701-bfe5-4cb6-8ff3-89035e87409a.jpg',
-        },
-    ],
-    expired: false,
-}
-
-async function downloadImage(url, filename) {
-    const response = await axios.get(url, { responseType: 'arraybuffer' })
-    // const path = path.join(__dirname, filename)
-    console.log(path)
-    fs.writeFile(filename, response.data, (err) => {
-        if (err) throw err
-        console.log('Image downloaded successfully!')
-    })
-}
-
-async function downloadAllImagesFromObject(creation) {
-    creation.images.forEach(async (image) => {
-        const response = await axios.get(image.url, {
-            responseType: 'arraybuffer',
-        })
-        fs.writeFile(
-            `images/${creation.id}-${image.id}.jpg`,
-            response.data,
-            (err) => {
-                if (err) throw err
-                console.log('Image downloaded successfully!')
-            },
-        )
-    })
-}
-
-function updateCreations() {
-    const options = {
-        method: 'GET',
-        url: 'https://api.starryai.com/creations/',
-        headers: {
-            accept: 'application/json',
-            'X-API-Key': process.env.KEY,
-        },
-    }
-    return axios
-        .request(options)
-        .then((response) => {
-            creations = response.data
-        })
-        .catch((error) => {
-            console.error(error)
-        })
-}
+let userData = {}
 
 vorpal
     .command('creations <operation>')
-    .description('Operations on creations')
+    .description('Operations on creations list, update, display.')
+    .option('-n, --number', 'The number of creations.')
+    .option('-a, --active', 'Output all active creations.')
+    .option('-l, --long', 'Outputs the long version of the creations.')
+    .option('-j, --json', 'Output as JSON.')
+    .option('-o, --output <file>', 'Output to a file.')
     .action(function (args, callback) {
+        updateCreations()
+
         if (args.operation === 'list') {
-            updateCreations()
-            creations.map((creation) => {
-                this.log(creation.id, creation.prompt)
-            })
+            if (args.options.active) {
+                const activeCreations = creations.filter(
+                    (creation) => creation.expired === false,
+                )
+
+                this.log(
+                    activeCreations.map((creation) => {
+                        this.log(creation.id, creation.prompt)
+                    }),
+                )
+            } else {
+                creations.map((creation) => {
+                    this.log(creation.id, ' --- ', creation.prompt)
+                })
+            }
         } else if (args.operation === 'update') {
             updateCreations()
         } else if (args.operation === 'display') {
-            console.log(creations)
+            this.log(creations)
         }
         callback()
     })
 
 vorpal
-    .command('download image from id [id]', 'Downloads an image from an id.')
+    .command('creation <id> [operation]')
+    .option('-j, --json', 'Output as JSON.')
+    .description('Thigs todo with a creation. Get, download, etc.')
     .action(function (args, callback) {
-        const id = 67751
+        const creation = creations.find((creation) => creation.id === args.id)
+        this.log(args.options.output)
+        if (creation) {
+            if (args.operation === 'download') {
+                downloadAllImagesFromObject(creation)
+            }
 
-        downloadAllImagesFromObject(testCreationObject)
-    })
-
-vorpal
-    .command(
-        'download image from object test',
-        'Downloads an image from an object',
-    )
-    .action(function (args, callback) {
-        downloadAllImagesFromObject(testCreationObject)
-    })
-
-vorpal
-    .command('filter expired', 'Filters out expired creations.')
-    .action(function (args, callback) {
-        const self = this
-        const options = {
-            method: 'GET',
-            url: 'https://api.starryai.com/creations/',
-            headers: {
-                accept: 'application/json',
-                'X-API-Key': 'rsC1AH67RQgB8VEw6yz_qvzrcBB58g',
-            },
+            if (args.options.json) {
+                this.log(creation)
+            } else {
+                this.log(creation.id, ' --- ', creation.prompt)
+            }
+        } else {
+            this.log('No creation with that id.')
         }
-
-        axios
-            .request(options)
-            .then(function (response) {
-                creations = response.data
-                const filteredCreations = creations.filter(
-                    (creation) => creation.expired === false,
-                )
-                console.log(filteredCreations)
-                callback()
-            })
-            .catch(function (error) {
-                console.error(error)
-                callback()
-            })
-    })
-
-vorpal
-    .command(
-        'show alive pretty',
-        'Shows the alive creations in a pretty format.',
-    )
-    .action(function (args, callback) {
-        const self = this
-        const options = {
-            method: 'GET',
-            url: 'https://api.starryai.com/creations/',
-            headers: {
-                accept: 'application/json',
-                'X-API-Key': 'rsC1AH67RQgB8VEw6yz_qvzrcBB58g',
-            },
-        }
-        axios
-            .request(options)
-            .then(function (response) {
-                creations = response.data
-                const filteredCreations = creations.filter(
-                    (creation) => creation.expired === false,
-                )
-
-                const prettyObject = filteredCreations.map(function (creation) {
-                    return {
-                        id: creation.id,
-                        prompt: creation.prompt,
-                    }
-                })
-                console.log(prettyObject)
-                callback()
-            })
-            .catch(function (error) {
-                console.error(error)
-                callback()
-            })
-    })
-
-vorpal
-    .command('get creations', "Gets the user's creations.")
-    .action(function (args, callback) {
-        const self = this
-        const options = {
-            method: 'GET',
-            url: 'https://api.starryai.com/creations/',
-            headers: {
-                accept: 'application/json',
-                'X-API-Key': 'rsC1AH67RQgB8VEw6yz_qvzrcBB58g',
-            },
-        }
-
-        axios
-            .request(options)
-            .then(function (response) {
-                console.log(response.data)
-                creations = response.data
-            })
-            .catch(function (error) {
-                console.error(error)
-            })
+        callback()
     })
 
 vorpal
@@ -261,13 +121,6 @@ vorpal
     })
 
 vorpal
-    .command('hello', 'Outputs "Hello, world!".')
-    .action(function (args, callback) {
-        console.log('Hello, world!')
-        callback()
-    })
-
-vorpal
     .command('write <filename> <content>', 'Writes content to a file.')
     .action(async function (args, callback) {
         try {
@@ -289,6 +142,10 @@ vorpal
 
 vorpal
     .command('user', 'Gets the current user data.')
+    .option('-b, --balance', 'Get the user balance.')
+    .option('-e, --email', 'Get the user email.')
+    .option('-i, --id', 'Get the user id.')
+    .option('-k, --key', 'Get the user key.')
     .action(function (args, callback) {
         const options = {
             method: 'GET',
@@ -299,60 +156,104 @@ vorpal
             },
         }
 
-        axios
+        const userData = axios
             .request(options)
             .then((response) => {
-                console.log('User data:', response.data)
-                callback()
+                return response.data
             })
             .catch((error) => {
-                console.log('There was an error...')
-                console.log(error)
-                callback()
+                return error
             })
-    })
 
-vorpal
-    .command('whoami', 'Outputs the current user.')
-    .action(function (args, callback) {
-        this.log(`You are ${process.env.USER}`)
-        this.log(`Your key is ${process.env.KEY}`)
+        if (args.options.balance) {
+            userData.then((data) => {
+                this.log(data.balance)
+            })
+        } else if (args.options.email) {
+            userData.then((data) => {
+                this.log(data.email)
+            })
+        } else if (args.options.id) {
+            userData.then((data) => {
+                this.log(data.id)
+            })
+        } else if (args.options.key) {
+            this.log(process.env.KEY)
+        } else {
+            userData.then((data) => {
+                this.log(data)
+            })
+        }
         callback()
     })
 
-vorpal
-    .command('balance', "Gets the user's balance.")
-    .action(function (args, callback) {
-        const options = {
-            method: 'GET',
-            url: 'https://api.starryai.com/user/',
-            headers: {
-                accept: 'application/json',
-                'X-API-Key': process.env.KEY,
-            },
-        }
+updateUserData()
 
-        axios
-            .request(options)
-            .then((response) => {
-                console.log('Balance:', response.data.balance)
-                callback()
-            })
-            .catch((error) => {
-                console.log('There was an error...')
-                console.log(error)
-                callback()
-            })
+updateCreations()
+
+vorpal.delimiter('⭐ >>>').show()
+
+async function downloadImage(url, filename) {
+    const response = await axios.get(url, { responseType: 'arraybuffer' })
+    // const path = path.join(__dirname, filename)
+    console.log(path)
+    fs.writeFile(filename, response.data, (err) => {
+        if (err) throw err
+        console.log('Image downloaded successfully!')
     })
+}
 
-vorpal
-    .command('write image test', 'Tests writing an image from a url')
-    .action(function (args, callback) {
-        this.log('Writing image...')
-        downloadImage(
-            'https://tmp.starryai.com/api/67749/ef4152f9-5ea5-4bf3-9853-6446f90f2e7c.jpg',
-            'images/test.jpg',
+async function downloadAllImagesFromObject(creation) {
+    creation.images.forEach(async (image) => {
+        const response = await axios.get(image.url, {
+            responseType: 'arraybuffer',
+        })
+        fs.writeFile(
+            `images/${creation.id}-${image.id}.jpg`,
+            response.data,
+            (err) => {
+                if (err) throw err
+                console.log('Image downloaded successfully!')
+            },
         )
     })
+}
 
-vorpal.delimiter('star>>>').show()
+function updateUserData() {
+    const options = {
+        method: 'GET',
+        url: 'https://api.starryai.com/user/',
+        headers: {
+            accept: 'application/json',
+            'X-API-Key': process.env.KEY,
+        },
+    }
+
+    axios
+        .request(options)
+        .then((response) => {
+            userData = response.data
+        })
+        .catch((error) => {
+            console.error(error)
+        })
+}
+
+function updateCreations() {
+    const options = {
+        method: 'GET',
+        url: 'https://api.starryai.com/creations/',
+        headers: {
+            accept: 'application/json',
+            'X-API-Key': process.env.KEY,
+        },
+    }
+    return axios
+        .request(options)
+        .then((response) => {
+            creations = response.data
+        })
+        .catch((error) => {
+            console.error(error)
+        })
+}
