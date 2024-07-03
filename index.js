@@ -21,6 +21,35 @@ let initialImageStrength = 50
 
 let creations = []
 
+const testCreationObject = {
+    id: 67752,
+    status: 'completed',
+    prompt: 'pregnant woman in a nightgown doing the splits',
+    negativePrompt: null,
+    width: 768,
+    height: 768,
+    highResolution: false,
+    seed: 1136683571,
+    steps: 20,
+    model: 'anime_vintage',
+    initialImage: null,
+    initialImageMode: null,
+    initialImageStrength: null,
+    createdAt: '2024-07-03T17:23:30',
+    updatedAt: '2024-07-03T10:23:46',
+    images: [
+        {
+            id: 1,
+            url: 'https://tmp.starryai.com/api/67752/b2ca4271-8083-467f-869c-898e8ce92ddc.jpg',
+        },
+        {
+            id: 2,
+            url: 'https://tmp.starryai.com/api/67752/4682e701-bfe5-4cb6-8ff3-89035e87409a.jpg',
+        },
+    ],
+    expired: false,
+}
+
 async function downloadImage(url, filename) {
     const response = await axios.get(url, { responseType: 'arraybuffer' })
     // const path = path.join(__dirname, filename)
@@ -67,38 +96,28 @@ function updateCreations() {
 }
 
 vorpal
-    .command('list creations', 'Lists the creations.')
-    .action(async function (args, callback) {
-        updateCreations()
-
-        creations.map((creation) => {
-            this.log(creation.id, creation.prompt)
-        })
-        // callback()
-    })
-
-vorpal
-    .command('update creations', 'Updates the creations list.')
+    .command('creations <operation>')
+    .description('Operations on creations')
     .action(function (args, callback) {
-        updateCreations()
+        if (args.operation === 'list') {
+            updateCreations()
+            creations.map((creation) => {
+                this.log(creation.id, creation.prompt)
+            })
+        } else if (args.operation === 'update') {
+            updateCreations()
+        } else if (args.operation === 'display') {
+            console.log(creations)
+        }
         callback()
     })
 
 vorpal
-    .command('display creations', 'Displays the creations list.')
-    .action(function (args, callback) {
-        console.log(creations)
-        callback()
-    })
-
-vorpal
-    .command('download image from id <id>', 'Downloads an image from an id.')
+    .command('download image from id [id]', 'Downloads an image from an id.')
     .action(function (args, callback) {
         const id = 67751
 
-        const objectIn = testCreationObject
-
-        downloadAllImagesFromObject(objectIn)
+        downloadAllImagesFromObject(testCreationObject)
     })
 
 vorpal
@@ -175,52 +194,6 @@ vorpal
                 console.error(error)
                 callback()
             })
-    })
-
-vorpal
-    .command('creations')
-    .option('-n, --number', 'The number of creations.')
-    .option('-j, --json', 'Output as JSON.')
-    .option('-o, --output <file>', 'Output to a file.')
-    .option('-a, --all', 'Output all creations.')
-    .option('-l, --latest', 'Output the latest creation.')
-    .option('-w, --alive', 'Output the creations that are alive.')
-    .description("Gets the user's creations.")
-    .action(function (args, callback) {
-        const self = this
-
-        const options = {
-            method: 'GET',
-            url: 'https://api.starryai.com/creations/',
-            headers: {
-                accept: 'application/json',
-                'X-API-Key': 'rsC1AH67RQgB8VEw6yz_qvzrcBB58g',
-            },
-        }
-
-        if (args.options.number) {
-            axios
-                .request(options)
-                .then(function (response) {
-                    creations = response.data
-                    console.log(creations.length)
-                })
-                .catch(function (error) {
-                    console.error(error)
-                })
-        } else {
-            axios
-                .request(options)
-                .then(function (response) {
-                    creations = response.data
-                    console.log(creations)
-                    callback()
-                })
-                .catch(function (error) {
-                    console.error(error)
-                    callback()
-                })
-        }
     })
 
 vorpal
