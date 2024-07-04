@@ -253,7 +253,7 @@ function updateCreations() {
             'X-API-Key': process.env.KEY,
         },
     }
-    return axios
+    axios
         .request(options)
         .then((response) => {
             creations = response.data

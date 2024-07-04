@@ -72,6 +72,46 @@ const templatePayload = {
     images: 1,
     steps: 20,
 }
+
+function getUserData() {
+    const options = {
+        method: 'GET',
+        url: 'https://api.starryai.com/user/',
+        headers: {
+            accept: 'application/json',
+            'X-API-Key': process.env.KEY,
+        },
+    }
+
+    axios
+        .request(options)
+        .then((response) => {
+            userData = response.data
+        })
+        .catch((error) => {
+            console.error(error)
+        })
+}
+
+function getCreations() {
+    const options = {
+        method: 'GET',
+        url: 'https://api.starryai.com/creations/',
+        headers: {
+            accept: 'application/json',
+            'X-API-Key': process.env.KEY,
+        },
+    }
+    return axios
+        .request(options)
+        .then((response) => {
+            creations = response.data
+        })
+        .catch((error) => {
+            console.error(error)
+        })
+}
+
 module.exports = {
     downloadImage,
     aspectRatios,
