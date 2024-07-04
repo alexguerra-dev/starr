@@ -6,13 +6,9 @@ const { readFile, writeFile, appendFile } = require('fs').promises
 const vorpal = require('vorpal')()
 const axios = require('axios')
 
-let seed = 0
+const utils = require('./utils')
 
-let initialImageUrl = ''
-let initialImageEncoded = ''
-let initialImageMode = 'color'
-let initialImageStrength = 50
-
+// Data structures to hold the data from the API.
 let creations = []
 let userData = {}
 
@@ -205,21 +201,12 @@ vorpal
         callback()
     })
 
+// Functions that run on startup
 updateUserData()
-
 updateCreations()
 
+// Start the CLI
 vorpal.delimiter('⭐ >>>').show()
-
-async function downloadImage(url, filename) {
-    const response = await axios.get(url, { responseType: 'arraybuffer' })
-    // const path = path.join(__dirname, filename)
-    console.log(path)
-    fs.writeFile(filename, response.data, (err) => {
-        if (err) throw err
-        console.log('Image downloaded successfully!')
-    })
-}
 
 async function downloadAllImagesFromObject(creation) {
     creation.images.forEach(async (image) => {
@@ -227,7 +214,7 @@ async function downloadAllImagesFromObject(creation) {
             responseType: 'arraybuffer',
         })
         fs.writeFile(
-            `images/${creation.id}-${image.id}.jpg`,
+            `data/images/${creation.id}-${image.id}.jpg`,
             response.data,
             (err) => {
                 if (err) throw err
