@@ -12,16 +12,35 @@ const utils = require('./utils')
 let creations = []
 let userData = {}
 
-let payload = {
-    prompt: 'pregnant woman in a bikini',
-    negativePrompt: '',
-    model: 'lyra',
-    aspectRatio: '5:4',
-    highResolution: false,
-    images: 1,
-    steps: 20,
-}
+vorpal
+    .command('hello', 'Outputs hello world.')
+    .action(function (args, callback) {
+        const options = {
+            method: 'GET',
+            url: 'https://api.starryai.com/creations/',
+            headers: {
+                accept: 'application/json',
+                'X-API-Key': process.env.KEY,
+            },
+        }
 
+        axios
+            .request(options)
+            .then((response) => {
+                console.log('hi ')
+                console.log(response.data)
+                creations = response.data
+            })
+            .catch((error) => {
+                console.error(error)
+            })
+
+        console.log('This is the value of the creations', creations)
+
+        callback()
+    })
+
+// Commands for the CLI
 vorpal
     .command('creations [operation]')
     .description('Operations on creations list, update, display.')
@@ -31,19 +50,56 @@ vorpal
     .option('-j, --json', 'Output as JSON.')
     .option('-o, --output <file>', 'Output to a file.')
     .action(function (args, callback) {
-        updateCreations()
+        const options = {
+            method: 'GET',
+            url: 'https://api.starryai.com/creations/',
+            headers: {
+                accept: 'application/json',
+                'X-API-Key': process.env.KEY,
+            },
+        }
 
-        const activeCreations = creations.filter(
-            (creation) => creation.expired === false,
-        )
+        axios
+            .request(options)
+            .then((response) => {
+                creations = response.data
+            })
+            .catch((error) => {
+                console.error(error)
+            })
 
-        this.log('Active Creations:\n')
+        if (args.options.json) {
+            this.log(creations)
+        } else if (args.options.output) {
+        } else if (args.options.active) {
+            const activeCreations = creations.filter(
+                (creation) => creation.expired === false,
+            )
+            this.log('Active Creations:\n')
+            this.log(
+                activeCreations.map((creation) => {
+                    this.log(creation.id, ': ', creation.prompt)
+                }),
+            )
+        } else {
+            this.log(creations)
+        }
 
-        this.log(
-            activeCreations.map((creation) => {
-                this.log(creation.id, ': ', creation.prompt)
-            }),
-        )
+        // this.log(creations)
+
+        callback()
+        // this.log(creations)
+        // const activeCreations = creations.filter(
+        //     (creation) => creation.expired === false,
+        // )
+
+        // this.log('Active Creations:\n')
+
+        // this.log(
+        //     activeCreations.map((creation) => {
+        //         this.log(creation.id, ': ', creation.prompt)
+        //     }),
+        // )
 
         // if (args.operation === 'list') {
         //     if (args.options.active) {
@@ -78,19 +134,19 @@ vorpal
         //         }),
         //     )
         // }
-        callback()
+        // callback()
     })
 
 vorpal
     .command('creation <id> [operation]')
     .option('-j, --json', 'Output as JSON.')
-    .description('Thigs todo with a creation. Get, download, etc.')
+    .description('Things todo with a creation. Get, download, etc.')
     .action(function (args, callback) {
         const creation = creations.find((creation) => creation.id === args.id)
         this.log(args.options.output)
         if (creation) {
             if (args.operation === 'download') {
-                downloadAllImagesFromObject(creation)
+                utils.downloadAllImagesFromObject(creation)
             }
 
             if (args.options.json) {
@@ -153,10 +209,6 @@ vorpal
 
         callback()
     })
-
-vorpal
-    .command('write payload <prompt>', "Writes the user's payload.")
-    .action(function (args, callback) {})
 
 vorpal
     .command(
@@ -226,55 +278,13 @@ vorpal
     })
 
 // Functions that run on startup
-updateUserData()
-updateCreations()
+utils.updateUserData(userData)
+getCreations()
 
 // Start the CLI
 vorpal.delimiter('⭐ >>>').show()
 
-async function downloadAllImagesFromObject(creation) {
-    creation.images.forEach(async (image) => {
-        const response = await axios.get(image.url, {
-            responseType: 'arraybuffer',
-        })
-        fs.writeFile(
-            `data/images/${creation.id}-${image.id}.jpg`,
-            response.data,
-            (err) => {
-                if (err) throw err
-                console.log('Image downloaded successfully!')
-            },
-        )
-    })
-}
-
-async function updateUserData() {
-    const options = {
-        method: 'GET',
-        url: 'https://api.starryai.com/user/',
-        headers: {
-            accept: 'application/json',
-            'X-API-Key': process.env.KEY,
-        },
-    }
-
-    try {
-        console.log('Fetching user data...')
-        let response = await axios
-            .request(options)
-            .then((response) => {
-                console.log('User data fetched successfully!')
-                userData = response.data
-            })
-            .catch((error) => {
-                console.error(error)
-            })
-    } catch (error) {
-        console.error('Error fetching data:', error)
-    }
-}
-
-async function updateCreations() {
+function getCreations(creations) {
     const options = {
         method: 'GET',
         url: 'https://api.starryai.com/creations/',
@@ -284,8 +294,13 @@ async function updateCreations() {
         },
     }
 
+    let creationsArray = []
+
+    console.log('Fetching creations...')
+    console.log('Value of the creations object:', creations)
+
     try {
-        let response = await axios
+        creationsArray = axios
             .request(options)
             .then((response) => {
                 creations = response.data
@@ -296,4 +311,6 @@ async function updateCreations() {
     } catch (error) {
         console.error('Error fetching data:', error)
     }
+
+    return creationsArray
 }

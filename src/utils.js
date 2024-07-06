@@ -3,17 +3,8 @@ const fs = require('fs')
 const path = require('path')
 const { readFile, writeFile, appendFile } = require('fs').promises
 
+const vorpal = require('vorpal')()
 const axios = require('axios')
-
-async function downloadImage(url, filename) {
-    const response = await axios.get(url, { responseType: 'arraybuffer' })
-    // const path = path.join(__dirname, filename)
-    console.log(path)
-    fs.writeFile(filename, response.data, (err) => {
-        if (err) throw err
-        console.log('Image downloaded successfully!')
-    })
-}
 
 let seed = 0
 
@@ -63,17 +54,7 @@ let payload = {
     steps: 20,
 }
 
-const templatePayload = {
-    prompt: 'pregnant woman in underwear',
-    negativePrompt: 'ugly',
-    model: models[4],
-    aspectRatio: aspectRatios[3],
-    highResolution: false,
-    images: 1,
-    steps: 20,
-}
-
-function getUserData() {
+async function updateUserData(userData) {
     const options = {
         method: 'GET',
         url: 'https://api.starryai.com/user/',
@@ -83,38 +64,50 @@ function getUserData() {
         },
     }
 
-    axios
-        .request(options)
-        .then((response) => {
-            userData = response.data
-        })
-        .catch((error) => {
-            console.error(error)
-        })
+    try {
+        let response = await axios
+            .request(options)
+            .then((response) => {
+                userData = response.data
+            })
+            .catch((error) => {
+                console.error(error)
+            })
+    } catch (error) {
+        console.error('Error fetching data:', error)
+    }
 }
 
-function getCreations() {
-    const options = {
-        method: 'GET',
-        url: 'https://api.starryai.com/creations/',
-        headers: {
-            accept: 'application/json',
-            'X-API-Key': process.env.KEY,
-        },
-    }
-    return axios
-        .request(options)
-        .then((response) => {
-            creations = response.data
+async function downloadAllImagesFromObject(creation) {
+    creation.images.forEach(async (image) => {
+        const response = await axios.get(image.url, {
+            responseType: 'arraybuffer',
         })
-        .catch((error) => {
-            console.error(error)
-        })
+        fs.writeFile(
+            `data/images/${creation.id}-${image.id}.jpg`,
+            response.data,
+            (err) => {
+                if (err) throw err
+                console.log('Image downloaded successfully!')
+            },
+        )
+    })
+}
+
+async function downloadImage(url, filename) {
+    const response = await axios.get(url, { responseType: 'arraybuffer' })
+    // const path = path.join(__dirname, filename)
+    console.log(path)
+    fs.writeFile(filename, response.data, (err) => {
+        if (err) throw err
+        console.log('Image downloaded successfully!')
+    })
 }
 
 module.exports = {
     downloadImage,
     aspectRatios,
     models,
-    templatePayload,
+    updateUserData,
+    downloadAllImagesFromObject,
 }
