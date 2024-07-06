@@ -23,7 +23,7 @@ let payload = {
 }
 
 vorpal
-    .command('creations <operation>')
+    .command('creations [operation]')
     .description('Operations on creations list, update, display.')
     .option('-n, --number', 'The number of creations.')
     .option('-a, --active', 'Output all active creations.')
@@ -33,27 +33,51 @@ vorpal
     .action(function (args, callback) {
         updateCreations()
 
-        if (args.operation === 'list') {
-            if (args.options.active) {
-                const activeCreations = creations.filter(
-                    (creation) => creation.expired === false,
-                )
+        const activeCreations = creations.filter(
+            (creation) => creation.expired === false,
+        )
 
-                this.log(
-                    activeCreations.map((creation) => {
-                        this.log(creation.id, creation.prompt)
-                    }),
-                )
-            } else {
-                creations.map((creation) => {
-                    this.log(creation.id, ' --- ', creation.prompt)
-                })
-            }
-        } else if (args.operation === 'update') {
-            updateCreations()
-        } else if (args.operation === 'display') {
-            this.log(creations)
-        }
+        this.log('Active Creations:\n')
+
+        this.log(
+            activeCreations.map((creation) => {
+                this.log(creation.id, ': ', creation.prompt)
+            }),
+        )
+
+        // if (args.operation === 'list') {
+        //     if (args.options.active) {
+        //         const activeCreations = creations.filter(
+        //             (creation) => creation.expired === false,
+        //         )
+
+        //         this.log(
+        //             activeCreations.map((creation) => {
+        //                 this.log(creation.id, creation.prompt)
+        //             }),
+        //         )
+        //     } else {
+        //         creations.map((creation) => {
+        //             this.log(creation.id, ' --- ', creation.prompt)
+        //         })
+        //     }
+        // } else if (args.operation === 'update') {
+        //     updateCreations()
+        // } else if (args.operation === 'display') {
+        //     this.log(creations)
+        // } else {
+        //     const activeCreations = creations.filter(
+        //         (creation) => creation.expired === false,
+        //     )
+
+        //     this.log('Active Creations:\n')
+
+        //     this.log(
+        //         activeCreations.map((creation) => {
+        //             this.log(creation.id, ': ', creation.prompt)
+        //         }),
+        //     )
+        // }
         callback()
     })
 
@@ -224,7 +248,7 @@ async function downloadAllImagesFromObject(creation) {
     })
 }
 
-function updateUserData() {
+async function updateUserData() {
     const options = {
         method: 'GET',
         url: 'https://api.starryai.com/user/',
@@ -234,17 +258,23 @@ function updateUserData() {
         },
     }
 
-    axios
-        .request(options)
-        .then((response) => {
-            userData = response.data
-        })
-        .catch((error) => {
-            console.error(error)
-        })
+    try {
+        console.log('Fetching user data...')
+        let response = await axios
+            .request(options)
+            .then((response) => {
+                console.log('User data fetched successfully!')
+                userData = response.data
+            })
+            .catch((error) => {
+                console.error(error)
+            })
+    } catch (error) {
+        console.error('Error fetching data:', error)
+    }
 }
 
-function updateCreations() {
+async function updateCreations() {
     const options = {
         method: 'GET',
         url: 'https://api.starryai.com/creations/',
@@ -253,12 +283,17 @@ function updateCreations() {
             'X-API-Key': process.env.KEY,
         },
     }
-    axios
-        .request(options)
-        .then((response) => {
-            creations = response.data
-        })
-        .catch((error) => {
-            console.error(error)
-        })
+
+    try {
+        let response = await axios
+            .request(options)
+            .then((response) => {
+                creations = response.data
+            })
+            .catch((error) => {
+                console.error(error)
+            })
+    } catch (error) {
+        console.error('Error fetching data:', error)
+    }
 }
